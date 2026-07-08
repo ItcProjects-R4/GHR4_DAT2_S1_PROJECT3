@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Tower | Flight Delay Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- Boot / Loading Screen -->
+  <div id="boot-screen" class="boot-screen">
+    <div class="boot-plane">🛫</div>
+    <div class="status-line" id="boot-status-line">Initializing...</div>
+  </div>
+
+  <!-- Main Application (Hidden until the model is ready) -->
+  <div id="app" style="display:none">
+
+    <header class="header">
+      <div class="eyebrow">FLIGHT DELAY CONTROL</div>
+      <h1>✈️ Flight Delay Prediction Control Tower</h1>
+      <p>Instant prediction of your flight delay probability based on real flight and weather data.</p>
+    </header>
+
+    <div class="wrap">
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="auto">🔮 Quick Prediction</button>
+        <button class="tab-btn" data-tab="manual">🛠️ Advanced Prediction</button>
+        <button class="tab-btn" data-tab="retrain">⚙️ Retrain Model</button>
+        <div class="tab-highlight" id="tab-highlight"></div>
+      </div>
+
+      <!-- ============ Auto Prediction ============ -->
+      <div class="panel active" id="panel-auto">
+        <p class="hint">Weather conditions and departure time will be estimated automatically from historical flights on the same route. You only need to enter four fields.</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Airline</label>
+            <select id="a-airline"></select>
+          </div>
+          <div class="field">
+            <label>Day of Week</label>
+            <select id="a-day"></select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Departure Airport</label>
+            <select id="a-dep"></select>
+          </div>
+          <div class="field">
+            <label>Arrival Airport</label>
+            <select id="a-arr"></select>
+          </div>
+        </div>
+
+        <div class="route-strip">
+          <div class="route-code" id="route-dep-code">---</div>
+          <div class="route-line"></div>
+          <div class="route-code" id="route-arr-code">---</div>
+        </div>
+
+        <button class="btn" id="predict-auto-btn">Predict Now 🚀</button>
+
+        <div class="error-box" id="a-error"></div>
+
+        <div class="result" id="a-result">
+          <div class="result-status-row">
+            <div class="status-word" id="a-status-word">--</div>
+            <div class="flap-board" id="a-flap-board"></div>
+          </div>
+          <div class="details-board" id="a-details"></div>
+        </div>
+      </div>
+
+      <!-- ============ Manual Prediction ============ -->
+      <div class="panel" id="panel-manual">
+        <p class="hint">Enter all weather and scheduling data manually to test different scenarios.</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Airline</label>
+            <select id="m-airline"></select>
+          </div>
+          <div class="field">
+            <label>Day of Week</label>
+            <select id="m-day"></select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Departure Airport</label>
+            <select id="m-dep"></select>
+          </div>
+          <div class="field">
+            <label>Arrival Airport</label>
+            <select id="m-arr"></select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Departure Hour (0-23)</label>
+            <input type="number" id="m-hour" value="12" min="0" max="23">
+          </div>
+          <div class="field">
+            <label>Departure Temperature</label>
+            <input type="number" id="m-dep-temp" value="25">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Departure Wind Speed</label>
+            <input type="number" id="m-dep-wind" value="10">
+          </div>
+          <div class="field">
+            <label>Arrival Temperature</label>
+            <input type="number" id="m-arr-temp" value="25">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Arrival Wind Speed</label>
+            <input type="number" id="m-arr-wind" value="10">
+          </div>
+          <div></div>
+        </div>
+
+        <button class="btn" id="predict-manual-btn">Predict Now 🚀</button>
+
+        <div class="error-box" id="m-error"></div>
+
+        <div class="result" id="m-result">
+          <div class="result-status-row">
+            <div class="status-word" id="m-status-word">--</div>
+            <div class="flap-board" id="m-flap-board"></div>
+          </div>
+          <div class="details-board" id="m-details"></div>
+        </div>
+      </div>
+
+      <!-- ============ Retraining ============ -->
+      <div class="panel" id="panel-retrain">
+        <p class="hint">Retrain the model from scratch (tests XGBoost, LightGBM, BalancedRandomForest, and HistGradientBoosting, then selects the best one). This may take several minutes depending on the dataset size.</p>
+        <button class="btn secondary" id="retrain-btn">Retrain Model 🔄</button>
+        <div class="progress-track" id="retrain-progress"><div class="progress-fill"></div></div>
+        <div class="log-box" id="retrain-log">Ready to retrain.</div>
+      </div>
+
+      <div class="footer-note">Predictions are estimates and depend on the quality and completeness of the available historical data.</div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
