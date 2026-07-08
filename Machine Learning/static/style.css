@@ -1,0 +1,541 @@
+/* =====================================================================
+   برج التحكم - نظام التنبؤ بتأخير الرحلات
+   Design tokens: aviation control-tower / HUD dashboard aesthetic
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Color */
+  --bg: #070b14;
+  --bg-panel: #0f1830;
+  --bg-panel-2: #141f3c;
+  --border: #223252;
+  --border-soft: #1a2645;
+  --text: #eaf1fb;
+  --text-muted: #8fa0c3;
+  --accent: #22d3ee;
+  --accent-dim: #22d3ee33;
+  --accent-2: #2dd4bf;
+  --delay: #fb7185;
+  --delay-dim: #fb718533;
+  --ontime: #34d399;
+  --ontime-dim: #34d39933;
+  --amber: #fbbf24;
+
+  /* Type */
+  --font-display: 'Tajawal', sans-serif;
+  --font-body: 'Tajawal', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  direction: rtl;
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 15% 0%, #0d1730 0%, transparent 45%),
+    radial-gradient(circle at 85% 10%, #0c1428 0%, transparent 40%);
+}
+
+::selection { background: var(--accent-dim); color: var(--text); }
+
+/* ---------------------------------------------------------------
+   Header + ambient radar sweep (the quiet ambient layer)
+   --------------------------------------------------------------- */
+.header {
+  position: relative;
+  overflow: hidden;
+  padding: 38px 24px 30px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+  isolation: isolate;
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--accent-dim) 18deg, transparent 40deg, transparent 360deg);
+  animation: radar-sweep 7s linear infinite;
+  opacity: 0.6;
+  z-index: -1;
+}
+
+@keyframes radar-sweep {
+  to { transform: rotate(360deg); }
+}
+
+.header .eyebrow {
+  font-family: var(--font-mono);
+  letter-spacing: 3px;
+  font-size: 12px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.header h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(24px, 4vw, 34px);
+  margin: 0 0 6px;
+  letter-spacing: 0.5px;
+}
+
+.header p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+}
+
+/* status pill in header while loading */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.status-pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+.status-pill.ready .dot {
+  background: var(--ontime);
+  box-shadow: 0 0 8px var(--ontime);
+  animation: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---------------------------------------------------------------
+   Layout
+   --------------------------------------------------------------- */
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* Segmented tab control ("control panel switches") */
+.tabs {
+  display: flex;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  gap: 4px;
+  margin-bottom: 22px;
+  position: relative;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.25s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-btn.active { color: #04121a; }
+
+.tab-highlight {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent-dim);
+  transition: transform 0.35s cubic-bezier(.5,1.4,.4,1), width 0.35s cubic-bezier(.5,1.4,.4,1);
+  z-index: 0;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px;
+  display: none;
+  animation: panel-in 0.35s ease;
+}
+
+.panel.active { display: block; }
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel p.hint {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  margin: 0 0 20px;
+  line-height: 1.7;
+}
+
+/* ---------------------------------------------------------------
+   Form fields
+   --------------------------------------------------------------- */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 560px) {
+  .field-row { grid-template-columns: 1fr; }
+}
+
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.field select, .field input {
+  width: 100%;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field select:focus, .field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.field select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                     linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: left 16px center, left 11px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-left: 30px;
+}
+
+/* Route strip visual (departure -> arrival) */
+.route-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 20px;
+  padding: 16px;
+  background: var(--bg-panel-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.route-code {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--accent);
+  min-width: 52px;
+  text-align: center;
+}
+
+.route-line {
+  flex: 1;
+  height: 0;
+  border-top: 2px dashed var(--border);
+  position: relative;
+}
+
+.route-line::after {
+  content: "✈";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(-1);
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+/* ---------------------------------------------------------------
+   Buttons
+   --------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #04121a;
+  box-shadow: 0 0 0 rgba(34,211,238,0);
+  transition: box-shadow 0.25s ease, transform 0.15s ease;
+}
+
+.btn:hover { box-shadow: 0 6px 24px var(--accent-dim); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+
+.btn.secondary {
+  background: var(--bg-panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn.secondary:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+
+/* ---------------------------------------------------------------
+   Result card + split-flap signature moment
+   --------------------------------------------------------------- */
+.result {
+  margin-top: 22px;
+  display: none;
+}
+
+.result.show {
+  display: block;
+  animation: panel-in 0.4s ease;
+}
+
+.result-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+  margin-bottom: 16px;
+}
+
+.flap-board {
+  display: flex;
+  gap: 3px;
+}
+
+.flap {
+  perspective: 300px;
+  width: 30px;
+  height: 40px;
+  background: #0a1122;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+
+.flap::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: rgba(0,0,0,0.5);
+}
+
+.flap.flip { animation: flap-flip 0.4s ease; }
+
+@keyframes flap-flip {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.status-word {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  transform-origin: center;
+}
+
+.status-word.flip-word { animation: word-flip 0.5s ease; }
+
+@keyframes word-flip {
+  0% { transform: rotateX(0deg); opacity: 1; }
+  45% { transform: rotateX(-90deg); opacity: 0; }
+  55% { transform: rotateX(90deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+.status-word.delayed { color: var(--delay); }
+.status-word.ontime { color: var(--ontime); }
+
+.details-board {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  line-height: 2;
+  white-space: pre-wrap;
+}
+
+.details-board strong { color: var(--text); }
+
+.error-box {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--delay-dim);
+  background: rgba(251, 113, 133, 0.08);
+  color: var(--delay);
+  font-size: 13.5px;
+  display: none;
+}
+
+.error-box.show { display: block; }
+
+/* ---------------------------------------------------------------
+   Retrain tab
+   --------------------------------------------------------------- */
+.progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-panel-2);
+  overflow: hidden;
+  margin: 16px 0;
+  display: none;
+}
+
+.progress-track.show { display: block; }
+
+.progress-fill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(340%); }
+}
+
+.log-box {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: #050810;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  margin-top: 14px;
+}
+
+/* ---------------------------------------------------------------
+   Boot / loading screen
+   --------------------------------------------------------------- */
+.boot-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 20px;
+}
+
+.boot-plane {
+  font-size: 40px;
+  animation: boot-float 2.2s ease-in-out infinite;
+}
+
+@keyframes boot-float {
+  0%, 100% { transform: translateY(0) scaleX(-1); }
+  50% { transform: translateY(-8px) scaleX(-1); }
+}
+
+.boot-screen .status-line {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.boot-error {
+  max-width: 520px;
+  text-align: right;
+  background: var(--bg-panel);
+  border: 1px solid var(--delay-dim);
+  border-radius: var(--radius);
+  padding: 20px;
+  color: var(--delay);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.footer-note {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 26px;
+  opacity: 0.8;
+}
